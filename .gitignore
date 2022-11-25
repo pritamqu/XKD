@@ -1,0 +1,7 @@
+__pycache__/
+.spyproject/
+src/
+checkpointing/
+weights/
+temp*
+codes/
