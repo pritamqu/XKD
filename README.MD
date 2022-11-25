@@ -26,6 +26,8 @@ We present **XKD**, a novel self-supervised framework to learn meaningful repres
 - [ ] Evaluation codes
 - [ ] Training codes
 
+Please check the project website for more details. The codes will be released soon.
+
 
 ### Citation
 If you find this repository useful, please consider giving a star :star: and citation using the given BibTeX entry:
