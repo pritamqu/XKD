@@ -11,7 +11,7 @@ Under Review.
 Ali Etemad
 </h3>
 <h3 align="center"> 
-<a href="https://arxiv.org/pdf/2211.00000.pdf">[Paper]</a> <!-- change with pub link -->
+<a href="https://arxiv.org/pdf/2211.13929.pdf">[Paper]</a> <!-- change with pub link -->
 <!-- <a href="./docs/assets/files/xkd_supp.pdf">[Appendix]</a> 
  <a href="https://arxiv.org/pdf/2211.00000.pdf"> [ArXiv]</a>   -->
  <a href="https://github.com/pritamqu/XKD/"> [Code]</a> <a href="https://pritamqu.github.io/XKD/"> [Website]</a>
@@ -43,7 +43,7 @@ If you find this repository useful, please consider giving a star :star: and cit
       title={XKD: Cross-modal Knowledge Distillation with Domain Alignment for Video Representation Learning}, 
       author={Pritam Sarkar and Ali Etemad},
       year={2022},
-      eprint={2211.00000},
+      eprint={2211.13929},
       archivePrefix={arXiv},
       primaryClass={cs.CV}
 }
