@@ -24,6 +24,7 @@ Ali Etemad
 - [ ] Evaluation codes
 - [x] Training codes
 - [ ] More documentations
+- [x] [Supplementary material](/docs/assets/xkd_supp.pdf)
 
 #### ** Please check the project website for more details. The codes will be released soon. You may follow this repo to receive future updates. **
 
