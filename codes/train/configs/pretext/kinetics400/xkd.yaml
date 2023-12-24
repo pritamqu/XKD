@@ -1,0 +1,150 @@
+name: "XKD"
+num_workers: 64 # this will be divided by number of gpus in each node
+num_node: 2 # num_node multiplies batch size
+apex: true # actually using pytorch amp
+apex_opt_level: "O1" # "O0 for FP32 training, O1 for mixed precision training.
+sync_bn: true
+
+progress:
+    print_freq: 100
+    log2tb: true
+    wandb: false
+    wandb_all: false
+dataset:
+    name: "kinetics400"
+    fold: 1
+    batch_size: 128 # effective batch size = cfg['num_node'] * cfg['batch_size']
+    clip_duration: 4.0 # duration of global view
+    video_fps: 8.
+    crop_size: 112 # 112 or 224
+    return_video: true
+    return_audio: true
+    audio_clip_duration: 4.0          # duration of global view
+    audio_fps: 16000.
+    hop_length: 143                 # this is equal to 0.01 sec / 10 ms
+    audio_fps_out: 112              # when hop length is 10 ms, audio_fps_out = 112; to match with ?x16 patch
+    n_mels: 80                      # ignore this for log-spectrogram
+    n_fft: 1024
+    vid_transform: "global_local"   # strong_tc | strong_tr     # combination of [RandomResizedCrop, RandomHorizontalFlip, ColorJitter, RandomGray, RandomGaussianBlur, Cutout]
+    aud_transform: "global_local"
+    train:
+        split: "train"
+        mode: "clip"        # clip | video | global_local
+        clips_per_video: 1
+        aug_mode: 'train'
+        use_shuffle: true
+        drop_last: true
+        vid_aug_kwargs:
+            temporal_ratio: 4 # 32->8
+            spatial_ratio: 1.16 # 112-> 96
+            num_local_views: 1
+            global:
+                color: [0.4, 0.4, 0.4, 0.2] # [0.4, 0.4, 0.4, 0.2]
+                crop_scale: [0.2, 1.] #
+                p_flip: 0.5             # change it to 0 to turn off
+                p_gray: 0.0  #            # change it to 0 to turn off
+                p_blur: 0.0  #            # change it to 0 to turn off
+                pad_missing: false # set pad_missing to false
+                normalize: true
+                totensor: true
+            local:
+                color: [0.4, 0.4, 0.4, 0.2]
+                crop_scale: [0.08, 0.4] # 
+                p_flip: 0.5             # change it to 0 to turn off
+                p_gray: 0.2  #           # change it to 0 to turn off
+                p_blur: 0.5  #           # change it to 0 to turn off
+                pad_missing: false # set pad_missing to false
+                normalize: true
+                totensor: true            
+        aud_aug_kwargs:
+            temporal_ratio: 4 # local duration is clip_duration/local2global_ratio
+            num_local_views: 1
+            global:
+                vol: 0.1                    # range in b/w -vol <--> +vol
+                wrap_window: 0             # act sz = 100 == 1 sec audio
+                voljitter: true             # change it to false to turn off
+                timewarp: false             # change it to false to turn off
+                randcrop: false             # change it to false to turn off
+                normalize: true
+                trim_pad: false # set trim_pad to false
+            local:
+                vol: 0.2                    # range in b/w -vol <--> +vol
+                wrap_window: 0             # act sz = 100 == 1 sec audio
+                virtual_crop_scale: [1.0, 1.5]
+                freq_scale: [0.6, 1.5] 
+                time_scale: [0.6, 1.5]
+                voljitter: true             # change it to false to turn off
+                timewarp: false             # change it to false to turn off
+                randcrop: true             # change it to false to turn off
+                normalize: true
+                trim_pad: false # set trim_pad to false
+
+hyperparams:
+    num_epochs: 800 # longer training
+    optimizer:
+        name: "adamw"
+        betas: [0.9, 0.95]
+    lr:
+        name: "cosine"
+        warmup_epochs: 30
+        warmup_lr: 0
+        base_lr: 0.0001 # for batch of 256
+        final_lr: 0.0
+    weight_decay:
+        name: "cosine"
+        warmup_epochs: 0
+        warmup: 0
+        base: 0.3
+        final: 0.3
+    vid_ema:
+        name: "cosine"
+        warmup_epochs: 0
+        warmup: 0
+        base: 0.997
+        final: 1
+    aud_ema:
+        name: "cosine"
+        warmup_epochs: 0
+        warmup: 0
+        base: 0.997
+        final: 1
+model:
+    name: "XKD" 
+    kwargs: # confirm these with the setup mentioned above
+        frame_size: [3, 112, 112]
+        num_frames: 32
+        vid_patch_spatial: [16, 16]
+        vid_patch_temporal: 4
+        spec_size: [80, 448] 
+        spec_patch_spatial: [4, 16]
+        apply_cls_token: true 
+        teacher_cfg: 'base_encoder'
+        student_cfg: 'base_encoder'
+        decoder_cfg: 'base_decoder'
+        projector_cfg: '2048-gelu-3-256-8192-norm3' 
+        center_momentum: [0.9, 0.9] # [vid, aud]
+        norm_pix_loss: true
+        masking_fn: 'random_masking'
+        align_loss: 'mmd' 
+    video_temp_kwargs:
+        warmup_teacher_temp: 0.1 # 0.09
+        warmup_teacher_temp_epochs: 30
+        teacher_temp: 0.1
+        student_temp: 0.1
+    audio_temp_kwargs:
+        warmup_teacher_temp: 0.07 # 0.09
+        warmup_teacher_temp_epochs: 30
+        teacher_temp: 0.07
+        student_temp: 0.1
+    fwd_kwargs:
+        global_views_number: 1
+        vid_mask_ratio: 0.85
+        aud_mask_ratio: 0.80
+        cm_attn_mode: 'mean' # mean or softmax
+        align_mode: 1 # 't2s', 't2t', 'both'
+        align_coeff: 1
+        cmkd_coeff: 1
+        recon_coeff: 5
+        clip_grad: 0.3 # Maximal parameter gradient norm if using gradient clipping. Clipping with norm .3 ~ 1.0 can help optimization for larger ViT architectures. 0 for disabling.
+        freeze_last_layer: 0 # Number of epochs during which we keep the output layer fixed. Typically doing so during the first epoch helps training. Try increasing this value if the loss does not decrease.
+        
