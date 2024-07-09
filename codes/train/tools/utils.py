@@ -94,7 +94,6 @@ def sanity_check(args):
     args.output_dir, args.data_dir = paths.my_paths(args.server, args.db)
     
     #----------- some setup that helps
-    # if args.server == 'scinet':
     import cv2
     cv2.setNumThreads(1)
     os.environ["OMP_NUM_THREADS"] = "1"

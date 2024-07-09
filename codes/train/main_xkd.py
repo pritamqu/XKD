@@ -19,9 +19,7 @@ import numpy as np
 GB = (1024*1024*1024)
 
 
-def get_args(mode='default'):
-
-    # mode will take care specific arguments for specific cases
+def get_args():
 
     parser = argparse.ArgumentParser()
 
@@ -29,16 +27,11 @@ def get_args(mode='default'):
     parser.add_argument("--parent_dir", default="Transformer", help="output folder name",)
     parser.add_argument("--sub_dir", default="pretext", help="output folder name",)
     parser.add_argument("--job_id", type=str, default='00', help="jobid=%j")
-    parser.add_argument("--server", type=str, default="local", help="location of server",
-                        choices=["ingenuity", "vector", "local", "scinet", "narval"])
-    parser.add_argument("--db", default="kinetics400", help="target db",
-                        choices=['kinetics400', 'audioset', 'kinetics_sound'])
+    parser.add_argument("--db", default="kinetics400", help="target db",)
     parser.add_argument('-c', '--config-file', type=str, help="config", default="xkd.yaml")
 
     ## debug mode
     parser.add_argument('--quiet', action='store_true')
-    parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--debug_subset_size', type=int, default=2)
 
     ## dir stuff
     parser.add_argument('--data_dir', type=str, default='D:\\datasets\\Vision\\image')
@@ -64,14 +57,7 @@ def get_args(mode='default'):
     parser.add_argument("--checkpoint_path", default="", help="checkpoint_path for system restoration")
     parser.add_argument('--checkpoint_interval', default=3600, type=int, help='checkpoint_interval')
 
-    if mode=='grid':
-        # grid job
-        parser.add_argument("--hyper_params_search", default=False, type=bool)
-        parser.add_argument("--grid_cfg", default='cfg_proj_layer', type=str, help='config dict for hyperparameter search')
-        parser.add_argument("--search_num", default=0, type=int)
-
     args = parser.parse_args()
-    args.mode = mode
     args = sanity_check(args)
     set_deterministic(args.seed)
     torch.backends.cudnn.benchmark = True
@@ -83,27 +69,6 @@ def main(args):
     cfg = yaml.safe_load(open(args.config_file))
     print(args)
     print(cfg)
-
-    # #------------ curves ---------------
-    # if args.server == 'vector':
-    #     cfg['progress']['log2tb']=False
-    #     cfg['progress']['wandb']=True
-    # elif args.server == 'scinet':
-    #     cfg['progress']['log2tb']=True
-    #     cfg['progress']['wandb']=False
-
-    if args.debug:
-        cfg, args = environ.set_debug_mode(cfg, args)
-        # small model for debug
-        cfg['model']['kwargs']['teacher_cfg']='small_encoder'
-        cfg['model']['kwargs']['student_cfg']='small_encoder'
-        cfg['model']['kwargs']['decoder_cfg']='small_decoder'
-        cfg['model']['video_temp_kwargs']['warmup_teacher_temp_epochs'] = 1
-        cfg['model']['audio_temp_kwargs']['warmup_teacher_temp_epochs'] = 1
-        # cfg['model']['kwargs']['teacher_cfg']=['small_encoder', 'tiny_encoder']
-        # cfg['model']['kwargs']['student_cfg']=['small_encoder', 'tiny_encoder']
-        # cfg['model']['kwargs']['decoder_cfg']=['small_decoder', 'tiny_decoder']
-        # cfg['model']['temp_kwargs']['warmup_teacher_temp_epochs'] = 1           
 
     if args.gpu is not None:
         warnings.warn('You have chosen a specific GPU. This will completely disable data parallelism.')
@@ -164,17 +129,8 @@ def main_worker(gpu, ngpus_per_node, args, cfg):
     logger.add_line(f"effecting batch size: {cfg['dataset']['batch_size']*args.world_size}")
 
     # transformations
-    if cfg['dataset']['train']['mode'] == 'global_local':
-        # TODO: remove later
-        video_frames=[cfg['dataset']['clip_duration']*cfg['dataset']['video_fps'], # global duration
-                    cfg['dataset']['clip_duration']*cfg['dataset']['video_fps']/cfg['dataset']['local2global_ratio'] # local duration
-                    ]
-        audio_duration=[cfg['dataset']['audio_clip_duration'], # global duration
-                        cfg['dataset']['audio_clip_duration']/cfg['dataset']['local2global_ratio'] # local duration
-                        ]
-    else:
-        video_frames=cfg['dataset']['clip_duration']*cfg['dataset']['video_fps']
-        audio_duration=cfg['dataset']['audio_clip_duration']
+    video_frames=cfg['dataset']['clip_duration']*cfg['dataset']['video_fps']
+    audio_duration=cfg['dataset']['audio_clip_duration']
 
     vid_transformations = get_vid_aug(name=cfg['dataset']['vid_transform'],
                                     crop_size=cfg['dataset']['crop_size'],
@@ -197,9 +153,6 @@ def main_worker(gpu, ngpus_per_node, args, cfg):
                                 video_transform=vid_transformations,
                                 audio_transform=aud_transformations,
                                 split='train')
-
-    if args.debug:
-        train_dataset = FetchSubset(train_dataset, cfg['dataset']['batch_size']*ngpus_per_node*args.debug_subset_size)
 
     # dataloader
     train_loader = dataloader.make_dataloader(dataset=train_dataset,
@@ -276,8 +229,6 @@ def main_worker(gpu, ngpus_per_node, args, cfg):
             np.ones(cfg['hyperparams']['num_epochs'] - audio_temp_kwargs['warmup_teacher_temp_epochs']) * audio_temp_kwargs['teacher_temp']
         ))
     audio_student_temp_schedule = np.ones(cfg['hyperparams']['num_epochs']) * audio_temp_kwargs['student_temp']
-
-
 
     ## try loading from checkpoint
 
@@ -434,7 +385,6 @@ def train_one_epoch(args, model, optimizer,
         # measure elapsed time
         batch_time.update(time.time() - end)
         # measure gpu usage
-        # if args.server=='scinet':
         gpu_meter.update(torch.cuda.max_memory_allocated()/GB)        
 
         # print to terminal and tensorboard
@@ -486,6 +436,4 @@ def train_one_epoch(args, model, optimizer,
 if __name__ == "__main__":
 
     args = get_args()
-    if args.server =='local':
-        args.debug=True
     main(args=args)

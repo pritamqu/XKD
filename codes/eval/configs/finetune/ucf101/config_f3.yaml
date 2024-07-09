@@ -1,0 +1,100 @@
+apex: true
+apex_opt_level: O1
+dataset:
+  batch_size: 24
+  clip_duration: 4
+  crop_size: 224
+  fold: 3
+  name: ucf101
+  return_audio: false
+  return_video: true
+  test:
+    aug_mode: val
+    clips_per_video: 3
+    drop_last: false
+    mode: video
+    split: testlist{fold:02d}
+    use_shuffle: false
+    vid_aug_kwargs:
+      normalize: true
+      pad_missing: true
+      totensor: true
+  train:
+    aug_mode: train
+    clips_per_video: 1
+    drop_last: true
+    mode: clip
+    split: trainlist{fold:02d}
+    use_shuffle: true
+    vid_aug_kwargs:
+      aspect_ratio:
+      - 0.75
+      - 1.3333
+      auto_augment: rand-m7-n4-mstd0.5-inc1
+      hflip: true
+      min_area:
+      - 0.2
+      - 0.766
+      normalize: true
+      pad_missing: true
+      rand_erase:
+        max_count: 1
+        mode: pixel
+        num_splits: 1
+        probability: 0.25
+      totensor: true
+  vid_transform: randaug3crop
+  video_fps: 8.0
+eval_freq: 10
+hyperparams:
+  cutmix: 0.5
+  cutmix_minmax: null
+  label_smoothing: 0.1
+  layer_decay: 0.45
+  lr:
+    base_lr: 0.0005
+    final_lr: 1.0e-06
+    name: cosine
+    warmup_epochs: 5
+    warmup_lr: 0
+  mixup: 0.6
+  mixup_mode: batch
+  mixup_prob: 1.0
+  mixup_switch_prob: 0.5
+  num_epochs: 100
+  optimizer:
+    betas:
+    - 0.9
+    - 0.999
+    name: adamw
+  weight_decay: 0.05
+model:
+  backbone:
+    apply_cls_token: true
+    drop_path_rate: 0
+    drop_rate: 0
+    frame_size:
+    - 3
+    - 112
+    - 112
+    num_frames: 32
+    patch_spatial:
+    - 16
+    - 16
+    patch_temporal: 4
+    vit_config: base
+  classifier:
+    num_classes: 101
+    use_bn: false
+    l2_norm: false
+    use_dropout: true
+    dropout: 0.5
+  fwd_kwargs:
+    feat_op: pool
+name: ucf101-finetune
+num_workers: 20
+progress:
+  log2tb: false
+  print_freq: 10
+  wandb: true
+sync_bn: true

@@ -8,29 +8,6 @@ import wandb
 from .logger import Logger
 WANDB_ID = 'pritamqu' # change with your wandb account id.
 
-def set_debug_mode(cfg, args):
-
-    if args.server == 'local':
-        # physical setup on windos machine
-        cfg['num_workers'] = 0
-        args.gpu=0
-        args.world_size = 1
-        cfg['progress']['wandb'] = True
-        os.environ['WANDB_MODE']="offline"
-        # memory saving
-        cfg['dataset']['batch_size'] = 2
-        cfg['dataset']['train']['clips_per_video']=1
-
-    # quick run
-    cfg['hyperparams']['num_epochs'] = 2
-    # log everything
-    cfg['progress']['print_freq'] = 1
-    # check monitor as well
-    # cfg['eval']['interval']=1
-    
-    return cfg, args
-
-
 def initialize_distributed_backend(args, ngpus_per_node):
     if args.distributed:
         if args.dist_url == "env://" and args.rank == -1:

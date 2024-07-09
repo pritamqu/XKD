@@ -1,0 +1,90 @@
+apex: true
+apex_opt_level: O1
+sync_bn: true
+num_workers: 16
+dataset:
+    batch_size: 256
+    clip_duration: 4
+    crop_size: 224
+    fold: 1
+    name: kinetics400
+    return_audio: false
+    return_video: true
+    vid_transform: "strong3crop"
+    video_fps: 8.0
+    train:
+      aug_mode: 'train' 
+      clips_per_video: 1
+      drop_last: true
+      mode: clip
+      split: train
+      use_shuffle: true
+      vid_aug_kwargs:
+        color:
+        - 0.4
+        - 0.4
+        - 0.4
+        - 0.2
+        cutout_size: 20
+        min_area: 0.08
+        normalize: true
+        num_of_cutout: 1
+        p_blur: 0.0
+        p_cutout: 0.0
+        p_flip: 0.5 # for ssv2 set false
+        p_gray: 0.0
+        pad_missing: true
+        normalize: true
+        totensor: true
+    test:
+      aug_mode: val
+      clips_per_video: 3
+      drop_last: false
+      mode: video
+      split: val
+      use_shuffle: false
+      vid_aug_kwargs:
+        normalize: true
+        pad_missing: true
+        totensor: true
+
+hyperparams:
+    num_epochs: 100
+    optimizer:
+        name: "adamw"
+        betas: [0.9, 0.999]
+        weight_decay: 0
+    lr:
+        name: "cosine" # fixed, cosine
+        warmup_epochs: 10
+        warmup_lr: 0
+        base_lr: 0.01
+        final_lr: 0
+    # mixup: 0.8 # set 0 to disable
+    # cutmix: 1.0 # set 0 to disable
+    # cutmix_minmax:
+    # mixup_prob: 1.0
+    # mixup_switch_prob: 0.5
+    # mixup_mode: 'batch' # "batch", "pair", or "elem"
+    # label_smoothing: 0.1 # set 0 to disable
+    # layer_decay: 0.65 # 0.65 0.75 0.8 vit B-L-H
+model:
+    classifier:
+        num_classes: 400
+        # use_bn: false
+    backbone: # these params are based on pre-training
+        frame_size: [3, 112, 112]
+        num_frames: 32
+        patch_spatial: [16, 16]
+        patch_temporal: 4
+        apply_cls_token: true 
+        vit_config: "base"
+    fwd_kwargs:
+        feat_op: 'pool' # 'cls'
+eval_mode: 'finetune' # 'finetune' or 'linear'
+name: k400-finetune
+progress:
+  log2tb: false
+  print_freq: 10
+  wandb: false
+

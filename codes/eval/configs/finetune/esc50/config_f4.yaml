@@ -1,0 +1,85 @@
+apex: true
+apex_opt_level: O1
+dataset:
+  aud_transform: "strong"
+  audio_clip_duration: 4
+  audio_fps: 16000.0
+  audio_fps_out: 112
+  batch_size: 64
+  fold: 4
+  hop_length: 143
+  n_fft: 1024
+  n_mels: 80
+  name: esc50
+  test:
+    aud_aug_kwargs:
+      normalize: true
+      trim_pad: true
+      DB_NORM: '_KINETICS'
+    aug_mode: val
+    clips_per_video: 3
+    drop_last: false
+    mode: "video"
+    split: test-{fold:01d}
+    use_shuffle: false
+
+  train:
+    aug_mode: "train"
+    clips_per_video: 1
+    mode: "clip" 
+    split: train-{fold:01d}
+    aud_aug_kwargs: # ** VJ-MASK-RC-TW **
+        vol: 0.2
+        fmask_len: [0, 10]
+        tmask_len: [0, 20]
+        num_fmask: 2
+        num_tmask: 2
+        wrap_window: 20
+        voljitter: true
+        timewarp: true
+        fmask: true
+        tmask: true
+        randcrop: true
+        normalize: true
+        trim_pad: true
+        DB_NORM: '_KINETICS'
+    use_shuffle: true
+    drop_last: true
+model:
+  backbone: # configurations are based on the pretraining
+      spec_size: [80, 448] 
+      patch_spatial: [4, 16]
+      apply_cls_token: true 
+      vit_config: "base"
+  classifier:
+      num_classes: 50
+      use_bn: false
+      l2_norm: true
+      use_dropout: true
+      dropout: 0.5
+  fwd_kwargs:
+      feat_op: 'pool' # 'cls'
+name: ESC50-fintune
+num_workers: 20
+hyperparams:
+    layer_decay: 0.65
+    num_epochs: 100
+    optimizer:
+        name: "adamw"
+        betas: [0.9, 0.999]
+        momentum: 0.9 # ignored for adam and adamw
+        weight_decay: 0.005
+    lr:
+        name: "cosine" # fixed, cosine
+        warmup_epochs: 10
+        warmup_lr: 0
+        base_lr: 0.0001
+        final_lr: 0
+        milestones: [10, 30]
+        gamma: 0.1
+progress:
+  log2tb: false
+  print_freq: 10
+  wandb: false
+sync_bn: false
+eval_freq: 1

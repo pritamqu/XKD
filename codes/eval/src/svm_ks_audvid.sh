@@ -1,0 +1,30 @@
+#!/bin/sh
+
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --gpus-per-node=1
+
+export MASTER_ADDR=$(hostname)
+echo "rank $SLURM_NODEID master: $MASTER_ADDR"
+echo "rank $SLURM_NODEID Launching python script"
+
+MASTER=`/bin/hostname -s`
+MPORT=$(shuf -i 6000-9999 -n 1)
+jobdir="$(dirname "$(dirname "$(pwd)")")";
+log_path="./OUTPUTS/logs"
+
+cd $HOME
+cd $jobdir
+
+CONFIG=$1
+WEIGHT_PATH_VID="/path.pth.tar"
+WEIGHT_PATH_AUD="/path.pth.tar"
+
+python eval_svm_audiovideo.py \
+--world-size 1 --rank 0 --gpu 0 \
+--job_id ${SLURM_JOBID} --quiet --sub_dir 'svm' \
+--db 'kinetics_sound' \
+--config-file ${CONFIG} \
+--weight_path_vid ${WEIGHT_PATH_VID} \
+--weight_path_aud ${WEIGHT_PATH_AUD} \
+--seed 99999

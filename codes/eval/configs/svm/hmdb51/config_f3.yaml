@@ -1,0 +1,56 @@
+dataset:
+  batch_size: 32 # when extracting features
+  clip_duration: 4.0
+  crop_size: 112
+  fold: 3 # 1 2 3
+  name: hmdb51
+  test:
+    # epochs: 1
+    aug_mode: val
+    clips_per_video: 3
+    mode: video
+    split: test-split{fold}
+    vid_aug_kwargs:
+      normalize: true
+      pad_missing: true
+      totensor: true
+  train:
+    # epochs: 10
+    aug_mode: train
+    clips_per_video: 25 # size of 10 epochs
+    mode: clip # clip
+    split: train-split{fold}
+    vid_aug_kwargs: # ** MSC-HF-CJ-GS-CO **
+        color: [0.4, 0.4, 0.4, 0.2]
+        min_area: [0.08, 1]
+        cutout_size: 0 
+        num_of_cutout: 0
+        p_flip: 0.5
+        p_gray: 0.2
+        p_blur: 0.0 # don't apply gaussian-blur in fixedfeat
+        p_cutout: 0.0 # not applying cutout
+        pad_missing: true
+        normalize: true
+        totensor: true
+  vid_transform: "strong3crop"
+  video_fps: 8.0
+model:
+  svm:
+      cost: [0.001, 0.01, 0.1, 1] # change to final value later
+      iter: 1000
+      scale_features: false
+  backbone: # configurations are based on the pretraining
+      frame_size: [3, 112, 112]
+      num_frames: 32
+      patch_spatial: [16, 16]
+      patch_temporal: 4
+      apply_cls_token: true 
+      vit_config: "base"
+  fwd_kwargs:
+      feat_op: 'pool'
+name: ucf101-svm
+num_workers: 20
+progress:
+  log2tb: false
+  print_freq: 10
+  wandb: true
