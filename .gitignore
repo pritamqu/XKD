@@ -1,6 +1,7 @@
 __pycache__/
 .spyproject/
-src/
-checkpointing/
+# src/
+# checkpointing/
 weights/
 temp*
+# eval/
