@@ -19,7 +19,7 @@ Ali Etemad
 
 
 ### Updates
-- [x] Paper
+- [x] [Paper](https://arxiv.org/abs/2211.13929)
 - [x] [Pretrained model weights](https://github.com/pritamqu/XKD/releases/tag/weights)
 - [x] [Evaluation codes](./codes/eval/)
 - [x] [Training codes](./codes/train/)
